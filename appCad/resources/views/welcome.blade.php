@@ -2,7 +2,7 @@
 
 @section('content')
     <h1>Cadastros</h1>
-    <p id="n_ip">IP</p>
+
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
           <li class="breadcrumb-item active" aria-current="page">Lista de cadastros</li>
@@ -46,6 +46,7 @@
                 <div class="row">
                     <form id="form_enviar_docs" name="form_enviar_docs" action="javascript:void(0)" enctype="multipart/form-data" method="POST" >
                     <input type="hidden" value="0" id="modal_id" name="modal_id" />
+                    <input type="hidden" value="0" id="ip_num" name="ip_num" />
 
                     <div class="form-group col-sm-12 col-md-12 col-lg-12 col-xl-12">
                       <label>Nome</label>
@@ -57,7 +58,7 @@
                     </div>
                     <div class="form-group col-sm-12 col-md-4 col-lg-4 col-xl-4">
                       <label>Telefone</label>
-                      <input type="text" class="form-control" id="modal_fone" name="modal_fone" placeholder="Telefone" value="">
+                      <input type="text" class="form-control format_fone" id="modal_fone" name="modal_fone" placeholder="Telefone" value="">
                     </div>
                     <div class="form-group col-sm-12 col-md-12 col-lg-12 col-xl-12">
                           <label>Arquivo (Max 500kb)</label>
@@ -90,30 +91,6 @@
 window.onload=function()
 {
   carregarUsuarios()
-
-
-
-/* $.ajax({
-            url : "http://meuip.com/api/meuip.php",
-            type: 'get',
-            beforeSend:function()
-            {
-                alert()
-            },
-            success : function (data)
-            {
-                alert(data.ip)
-                $("#n_ip").text("Meu IP público é: ", data.ip);
-            },
-            complete : function (data){
-                alert(JSON.stringify((data)))
-                $("#n_ip").text("Meu IP público é: ", JSON.stringify((data)));
-            },
-            error : function (err)
-            {
-
-            }
-        });*/
 }
 
 
@@ -168,7 +145,12 @@ function saveUser(){
         validar = false;
         campos  += 'Preencha o email / ';
     } else {
-        if ( !validacaoEmail( $("#modal_email").val() ) ) {
+
+        let fone = $("#modal_email").val()
+        //fone = fone.replace(')', '')
+        //fone = fone.replace('-', '')
+//
+        if ( !validacaoEmail( fone ) ) {
             validar = false;
             campos  += 'Email inválido / ';
         }
@@ -177,6 +159,13 @@ function saveUser(){
     if( $("#modal_fone").val() == ""){
         validar = false;
         campos  += 'Preencha o telefone /';
+    } else {
+        var telefone = $("#modal_fone").val().replace(' ','');
+        var regex = new RegExp('^\\([0-9]{2}\\)((3[0-9]{3}-[0-9]{4})|(9[0-9]{4}-[0-9]{4}))$');
+        if (!regex.test(telefone)) {
+            validar = false;
+            campos  += 'Telefone inválido / ';
+        }
     }
 
     if( $("#modal_msg").val() == ""){
@@ -288,6 +277,11 @@ async function clearModal(){
     $("#modal_msg").val("");
     $("#alert_aguarde_modal").hide()
     $("#alert_erro_modal").hide()
+
+    $.getJSON("https://api.ipify.org?format=json",
+            function(data) {
+            $("#ip_num").val(data.ip);
+        })
 }
 
 function editUser(id){
@@ -341,6 +335,7 @@ function carregarUsuarios(){
             div    += '       <th scope="col">Nome</th>';
             div    += '       <th scope="col">Email</th>';
             div    += '       <th scope="col">Arquivo</th>';
+            div    += '       <th scope="col">IP</th>';
             div    += '       <th scope="col">Opções</th>';
             div    += '     </tr>';
             div    += '   </thead>';
@@ -353,6 +348,7 @@ function carregarUsuarios(){
                 div    += '     <td>'+data[i].nome+'</td>';
                 div    += '     <td>'+data[i].email+'</td>';
                 div    += '     <td><a target="_blank" href="'+data[i].arquivo+'">Ver arquivo</a></td>';
+                div    += '     <td>'+data[i].ip+'</td>';
                 div    += '     <td>';
                 //div    += '         <button style="margin-top:5px" onclick="editarAddUser('+data[i].id+')" class="btn btn-sm btn-primary">Editar</button>';
                 div    += '         <button style="margin-top:5px" onclick="apagar_usuario('+data[i].id+')" class="btn btn-sm btn-danger">Excluir</button>';
@@ -375,7 +371,37 @@ function carregarUsuarios(){
     });
 }
 
+function mtel(v)
+{
+  v=v.replace(/\D/g,""); //Remove tudo o que não é dígito
+  v=v.replace(/^(\d{2})(\d)/g,"($1) $2"); //Coloca parênteses em volta dos dois primeiros dígitos
+  v=v.replace(/(\d)(\d{4})$/,"$1-$2"); //Coloca hífen entre o quarto e o quinto dígitos
+  return v;
+}
 
+
+$( document ).on('keyup',".format_fone",function()
+{
+  mascara( this, mtel );
+});
+
+function mascara(o,f)
+{
+  v_obj=o
+  v_fun=f
+  setTimeout("execmascara()",1)
+}
+
+function execmascara()
+{
+  v_obj.value=v_fun(v_obj.value)
+}
+
+function validPhone (phone) {
+    //var regex = new RegExp('^\\([0-9]{2}\\)((3[0-9]{3}-[0-9]{4})|(9[0-9]{3}-[0-9]{5}))$');
+    var regex = new RegExp('^\\(((1[1-9])|([2-9][0-9]))\\)((3[0-9]{3}-[0-9]{4})|(9[0-9]{3}-[0-9]{5}))$');
+    return regex.test(phone);
+}
 
 </script>
 @stop
